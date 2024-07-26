@@ -1,21 +1,59 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import "daisyui/dist/full.css";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+
+const getInitialState = (key, defaultValue, isJSON = true) => {
+  try {
+    const savedValue = localStorage.getItem(key);
+    if (savedValue === null) return defaultValue;
+    return isJSON ? JSON.parse(savedValue) : savedValue;
+  } catch (error) {
+    console.error(`Error loading ${key} from localStorage:`, error);
+    return defaultValue;
+  }
+};
+
 function App() {
-  const [currency, setCurrency] = useState("CZK");
-  const [ticketTypes, setTicketTypes] = useState([
-    { type: "Adult", priceCZK: 200, priceEUR: 8 },
-    { type: "Wheelchair", priceCZK: 150, priceEUR: 6 },
-  ]);
-  const [tickets, setTickets] = useState({});
+  const [currency, setCurrency] = useState(() =>
+    getInitialState("currency", "CZK", false)
+  );
+  const [ticketTypes, setTicketTypes] = useState(() => {
+    const savedTicketTypes = getInitialState('ticketTypes', []);
+    return savedTicketTypes.length ? savedTicketTypes : [
+      { type: "Adult", priceCZK: 200, priceEUR: 8 },
+      { type: "Wheelchair", priceCZK: 150, priceEUR: 6 },
+    ];
+  });
+  const [tickets, setTickets] = useState(() => getInitialState("tickets", {}));
   const [modalType, setModalType] = useState(null);
   const [currentTicket, setCurrentTicket] = useState({
     type: "",
     priceCZK: "",
     priceEUR: "",
   });
-  const [amountReceived, setAmountReceived] = useState("");
+  const [amountReceived, setAmountReceived] = useState(() =>
+    getInitialState("amountReceived", "", false)
+  );
+
+  // Save data to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem("ticketTypes", JSON.stringify(ticketTypes));
+      localStorage.setItem("tickets", JSON.stringify(tickets));
+      localStorage.setItem("currency", currency);
+      localStorage.setItem("amountReceived", amountReceived);
+
+      console.log("Saved to localStorage:", {
+        ticketTypes,
+        tickets,
+        currency,
+        amountReceived,
+      });
+    } catch (error) {
+      console.error("Error saving data to localStorage:", error);
+    }
+  }, [ticketTypes, tickets, currency, amountReceived]);
 
   const handleTicketChange = (type, delta) => {
     setTickets((prev) => ({
